@@ -170,6 +170,42 @@ client.on('message', async (message) => {
     }
 });
 ```
+**Example to play song from spotify**
+```js
+client.on('message', async (message) => {
+    const args = message.content.slice(settings.prefix.length).trim().split(/ +/g);
+    const command = args.shift().toLowerCase();
+
+    if(command === 'play'){
+        if (args[0].match(/(open.spotify.com)\/(?:track)\/.{0,9}[0-9A-Za-z]\w+/ig)) {
+            let spotifyConversion = await client.player.spotifySong(spotifyAccessKey, args[0]);
+            let song = await this.client.player.play(message.member.voice.channel, spotifyConversion, {}, message.author);
+        }
+        song = song.song;
+        message.channel.send(`Started playing ${song.name}.`);
+    }
+});
+```
+**Example to play playlist from spotify**
+```js
+client.on('message', async (message) => {
+    const args = message.content.slice(settings.prefix.length).trim().split(/ +/g);
+    const command = args.shift().toLowerCase();
+
+    if(command === 'play'){
+        let playlist = await this.client.player.play(spotifyAccessKey, args[0]);
+        const firstTrack = playlist.first;
+        const restOfTracks = playlist.queue;
+        if (args[0].match(/(open.spotify.com)\/(?:playlist)\/.{0,9}[0-9A-Za-z]\w+/ig)) {
+            await this.client.player.play(message.member.voice.channel, firstTrack, {}, message.author);
+            for (const track of restOfTracks) {
+                await this.client.player.addToQueue(message.guild.id, track, {}, message.author);
+            }
+        }
+        message.channel.send(`Started playing the playlist ${playlist.name}.`);
+    }
+});
+```
 
 ### Add To Queue
 **This part is per isPlaying (``client.player.isPlaying(GuildID)``) too.**

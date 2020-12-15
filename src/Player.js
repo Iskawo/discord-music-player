@@ -7,6 +7,8 @@ const Queue = require('./Queue');
 const Util = require('./Util');
 const Song = require('./Song');
 const MusicPlayerError = require('./MusicPlayerError');
+const fetch = require('node-fetch');
+
 
 /**
  * Player options.
@@ -79,8 +81,73 @@ class Player {
      * @param {string} guildID The guild ID to check
      * @returns {Boolean} Whether the guild is currently playing songs
      */
-    isPlaying(guildID) {
+    isPlaying = (guildID) => {
         return this.queues.some((g) => g.guildID === guildID);
+    }
+
+    /**
+    * Converts a spotify track URL to a string containing the artist and song name.
+    * @param {string} token An access token from spotify.
+    * @param {string} query The spotify song URL.
+    * @returns {Promise<String>} The artist and song name (e.g. "Rick Astley - Never Gonna Give You Up")
+    */
+    spotifySong = async(token, query) => {
+        let path = query.split(/[\/?]/);
+        let songID = path[4];
+        const accessToken = (
+            await (await fetch('https://accounts.spotify.com/api/token', {
+                method: 'post',
+                body: 'grant_type=client_credentials',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': `Basic ${token}`
+                }
+            })).json()
+        ).access_token;
+        const data = await (await fetch(`https://api.spotify.com/v1/tracks/${songID}`, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        })).json();
+        return `${data['artists']['0']['name']} - ${data['name']}`;
+    }
+
+    /**
+    * Converts a spotify playlist URL to an object containing playlist information.
+    * @param {string} token An access token from spotify.
+    * @param {string} query The spotify playlist URL.
+    * @returns {Promise<Object>} An object containing playlist information
+    */
+    spotifyPlaylist = async(token, query) => {
+        let path = query.split(/[\/?]/);
+        let playlistID = path[4];
+        const accessToken = (
+            await (await fetch('https://accounts.spotify.com/api/token', {
+                method: 'post',
+                body: 'grant_type=client_credentials',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': `Basic ${token}`
+                }
+            })).json()
+        ).access_token;
+        const data = await (await fetch(`https://api.spotify.com/v1/playlists/${playlistID}`, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        })).json();
+        const firstTrack = data.tracks.items.map(track => `${track.track.artists[0].name} - ${track.track.name}`)[0];
+        const queue = data.tracks.items.filter(track => `${track.track.artists[0].name} - ${track.track.name}` !== firstTrack).map(track => `${track.track.artists[0].name} - ${track.track.name}`)
+        return {
+            first: firstTrack,
+            queue: queue,
+            name: data.name,
+            user: data.owner.display_name,
+            art: data.images[1].url,
+            link: data.external_urls.spotify,
+            songCount: data.tracks.total
+        }
+        // return data
     }
 
     /**
@@ -91,7 +158,7 @@ class Player {
      * @param {User} requestedBy The user who requested the song.
      * @returns {Promise<Song>}
      */
-    async play(voiceChannel, songName, options = {}, requestedBy) {
+    play = async(voiceChannel, songName, options = {}, requestedBy) => {
         this.queues = this.queues.filter((g) => g.guildID !== voiceChannel.id);
 
         if (!voiceChannel || typeof voiceChannel !== 'object') return new MusicPlayerError('VoiceChannelTypeInvalid', 'song');
@@ -124,7 +191,7 @@ class Player {
      * @param {string} guildID
      * @returns {Song}
      */
-    pause(guildID) {
+    pause = (guildID) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull');
@@ -140,7 +207,7 @@ class Player {
      * @param {string} guildID
      * @returns {Song}
      */
-    resume(guildID) {
+    resume = (guildID) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull');
@@ -156,7 +223,7 @@ class Player {
      * @param {string} guildID
      * @returns {Void}
      */
-    stop(guildID) {
+    stop = (guildID) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull');
@@ -174,7 +241,7 @@ class Player {
      * @param {number} percent 
      * @returns {Void}
      */
-    setVolume(guildID, percent) {
+    setVolume = (guildID, percent) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull');
@@ -189,7 +256,7 @@ class Player {
      * @param {string} guildID
      * @returns {?Queue}
      */
-    getQueue(guildID) {
+    getQueue = (guildID) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         return queue;
@@ -202,7 +269,7 @@ class Player {
      * @param {User} requestedBy The user who requested the song.
      * @returns {Promise<Song>}
      */
-    async addToQueue(guildID, songName, options = {}, requestedBy) {
+    addToQueue = async(guildID, songName, options = {}, requestedBy) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull', 'song');
@@ -231,7 +298,7 @@ class Player {
      * @param {Array<Song>} songs The songs list
      * @returns {Queue}
      */
-    setQueue(guildID, songs) {
+    setQueue = (guildID, songs) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull');
@@ -246,7 +313,7 @@ class Player {
      * @param {string} guildID
      * @returns {Queue}
      */
-    clearQueue(guildID) {
+    clearQueue = (guildID) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull');
@@ -262,7 +329,7 @@ class Player {
      * @param {string} guildID
      * @returns {Song}
      */
-    skip(guildID) {
+    skip = (guildID) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull');
@@ -279,7 +346,7 @@ class Player {
      * @param {string} guildID
      * @returns {Song}
      */
-    nowPlaying(guildID) {
+    nowPlaying = (guildID) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull');
@@ -295,7 +362,7 @@ class Player {
      * @param {Boolean} enabled Whether the repeat mode should be enabled
      * @returns {Void}
      */
-    setRepeatMode(guildID, enabled) {
+    setRepeatMode = (guildID, enabled) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull');
@@ -311,7 +378,7 @@ class Player {
      * @param {number} song The index of the song to remove or the song to remove object.
      * @returns {Song|MusicPlayerError}
      */
-    remove(guildID, song) {
+    remove = (guildID, song) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull');
@@ -332,7 +399,7 @@ class Player {
      * @param {string} guildID 
      * @returns {Songs}
      */
-    shuffle(guildID) {
+    shuffle = (guildID) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull');
@@ -353,14 +420,18 @@ class Player {
     * @param {String} loadedIcon Loaded Icon
     * @returns {String}
     */
-    createProgressBar(guildID, barSize = 20, arrowIcon = '>', loadedIcon = '=') {
+    createProgressBar = (guildID, barSize = 20, arrowIcon = '>', loadedIcon = '=') => {
         let queue = this.queues.find((g) => g.guildID === guildID);
         if (!queue) return new MusicPlayerError('QueueIsNull');
 
         let timePassed = queue.dispatcher.streamTime;
         let timeEnd = Util.TimeToMiliseconds(queue.songs[0].duration);
 
-        return `${Util.buildBar(timePassed, timeEnd, barSize, loadedIcon, arrowIcon)}`;
+        try {
+            return `${Util.buildBar(timePassed, timeEnd, barSize, loadedIcon, arrowIcon)}`;
+        } catch (e) {
+            return `**[LIVE]**`
+        }
     }
 
     /**
@@ -369,7 +440,7 @@ class Player {
      * @param {string} guildID
      * @param {Boolean} firstPlay Whether the function was called from the play() one
      */
-    async _playSong(guildID, firstPlay) {
+    _playSong = async(guildID, firstPlay) => {
         // Gets guild queue
         let queue = this.queues.find((g) => g.guildID === guildID);
         // If there isn't any music in the queue

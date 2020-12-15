@@ -207,9 +207,8 @@ class Util {
         const emptyProgress = size - progress;
 
         const progressText = loadedIcon.repeat(progress) + arrowIcon;
-        const emptyProgressText = ' '.repeat(emptyProgress);
-
-        return `[${progressText}${emptyProgressText}][${this.MilisecondsToTime(value)}/${this.MilisecondsToTime(maxValue)}]`;
+        const emptyProgressText = loadedIcon.repeat(emptyProgress);
+        return `[${progressText}${emptyProgressText}] **[${this.MilisecondsToTime(value)}/${this.MilisecondsToTime(maxValue)}]**`;
     };
 
 
