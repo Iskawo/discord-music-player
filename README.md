@@ -193,7 +193,7 @@ client.on('message', async (message) => {
     const command = args.shift().toLowerCase();
 
     if(command === 'play'){
-        let playlist = await this.client.player.play(spotifyAccessKey, args[0]);
+        let playlist = await this.client.player.spotifyPlaylist(spotifyAccessKey, args[0]);
         const firstTrack = playlist.first;
         const restOfTracks = playlist.queue;
         if (args[0].match(/(open.spotify.com)\/(?:playlist)\/.{0,9}[0-9A-Za-z]\w+/ig)) {
