@@ -143,7 +143,7 @@ class Player {
             queue: queue,
             name: data.name,
             user: data.owner.display_name,
-            art: data.images[1] ? data.images[1] : 'https://i.br4d.vip/LQkc9_nk.png',
+            art: data.images[1] ? data.images[1].url : 'https://i.br4d.vip/LQkc9_nk.png',
             link: data.external_urls.spotify,
             songCount: data.tracks.total
         }
